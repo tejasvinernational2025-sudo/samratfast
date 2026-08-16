@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Member Dashboard - Samrat Fast</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; margin: 0; text-align: center; }
+        .header { background: #1e3a8a; color: white; padding: 20px; border-bottom: 4px solid #fbbf24; }
+        .stat-box { background: white; width: 90%; max-width: 400px; margin: 20px auto; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .balance { font-size: 2.5rem; color: #059669; font-weight: bold; }
+        .btn-deposit { display: block; background: #fbbf24; color: black; padding: 15px; border-radius: 10px; text-decoration: none; font-weight: bold; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h3 id="uName">Loading Profile...</h3>
+        <small>MEMBER ID: <span id="uId">--</span></small>
+    </div>
+
+    <div class="stat-box">
+        <small style="color:#64748b;">TOTAL SAVINGS</small>
+        <div class="balance">₹<span id="balDisplay">0</span></div>
+        <div style="color: #3b82f6; font-size: 14px; margin-top: 5px;">Interest Earned: ₹<span id="interestDisplay">0</span></div>
+        
+        <a href="recharge.html" class="btn-deposit">➕ DEPOSIT MONEY</a>
+    </div>
+
+    <div id="history" style="padding: 20px; text-align: left; max-width: 400px; margin: 0 auto;">
+        <h4>Recent Transactions</h4>
+        <!-- List yahan aayegi -->
+    </div>
+
+<script>
+    // --- SUPABASE CONFIG ---
+    const SUPABASE_URL = "https://ugqcxyjrtjzgrsjnsdzz.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_Vh_h43bueeQGhN_vXeey6w_V0rnZ"; 
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const userId = localStorage.getItem("xtreme_user_id");
+    if(!userId) window.location.href = "login.html";
+
+    async function loadData() {
+        const { data, error } = await _supabase.from('users_xtreme').select('*').eq('id', userId).single();
+        if(data) {
+            document.getElementById("uName").innerText = "Namaste, " + data.name;
+            document.getElementById("uId").innerText = data.phone;
+            document.getElementById("balDisplay").innerText = data.wallet;
+            // Interest calculation logic (Example: 0.5% daily)
+            document.getElementById("interestDisplay").innerText = (data.wallet * 0.05).toFixed(2);
+        }
+    }
+    loadData();
+</script>
+</body>
+</html>
