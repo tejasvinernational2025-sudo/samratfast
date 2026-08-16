@@ -1,47 +1,56 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Admin - Collection Control</title>
+    <title>Deposit - Samrat Savings</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: sans-serif; background: #111; color: white; padding: 20px; }
-        .row { background: #222; padding: 15px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #fbbf24; }
-        button { background: #22c55e; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        body { font-family: sans-serif; background: #f8fafc; text-align: center; padding: 20px; }
+        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: 0 auto; }
+        .upi-id { background: #e0f2fe; padding: 10px; border-radius: 10px; color: #0369a1; font-weight: bold; margin: 15px 0; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .btn-send { background: #1e3a8a; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
-    <h1>Pending Collections 🏦</h1>
-    <div id="list">Loading requests...</div>
+    <div class="card">
+        <h2>Paisa Jama Karein 💰</h2>
+        <p style="font-size: 13px; color: #64748b;">Niche di gayi UPI ID par payment karein aur UTR number yahan bharein.</p>
+        
+        <div class="upi-id">UPI ID: gaurav@upi</div> <!-- Yahan apni UPI ID badal lo -->
+
+        <input type="number" id="amt" placeholder="Amount (₹)">
+        <input type="text" id="utr" placeholder="UTR / Transaction ID">
+        
+        <button class="btn-send" onclick="submitDeposit()">SUBMIT DEPOSIT</button>
+        <br><br>
+        <a href="dashboard.html" style="color: #64748b; text-decoration: none; font-size: 14px;">← Wapas Dashboard</a>
+    </div>
 
 <script>
     const SUPABASE_URL = "https://ugqcxyjrtjzgrsjnsdzz.supabase.co";
     const SUPABASE_KEY = "sb_publishable_Vh_h43bueeQGhN_vXeey6w_V0rnZ"; 
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    async function loadRequests() {
-        const { data, error } = await _supabase.from('bets_xtreme').select('*, users_xtreme(name, wallet)').eq('status', 'pending');
-        
-        let html = "";
-        data.forEach(req => {
-            html += `<div class="row">
-                <span><b>${req.users_xtreme.name}</b>: ₹${req.amount}<br><small>UTR: ${req.number}</small></span>
-                <button onclick="approve('${req.id}', '${req.user_id}', ${req.amount}, ${req.users_xtreme.wallet})">APPROVE</button>
-            </div>`;
-        });
-        document.getElementById("list").innerHTML = html || "No pending requests.";
-    }
+    async function submitDeposit() {
+        const userId = localStorage.getItem("xtreme_user_id");
+        const amount = document.getElementById("amt").value;
+        const utr = document.getElementById("utr").value;
 
-    async function approve(id, uId, amt, currentBal) {
-        // 1. User ka balance badhao
-        await _supabase.from('users_xtreme').update({ wallet: currentBal + amt }).eq('id', uId);
-        // 2. Request complete karo
-        await _supabase.from('bets_xtreme').update({ status: 'approved' }).eq('id', id);
-        
-        alert("Paisa Jama Ho Gaya!");
-        loadRequests();
-    }
+        if(!amount || !utr) return alert("Pehle poori jankari bhariye!");
 
-    loadRequests();
+        // Supabase mein 'deposits_xtreme' naam ki table mein request jayegi
+        const { error } = await _supabase.from('bets_xtreme').insert([
+            { user_id: userId, amount: amount, number: utr, status: 'pending' }
+        ]);
+
+        if(!error) {
+            alert("Request Bhej di gayi hai! Admin 10 min mein check karke balance badha dega.");
+            window.location.href = "dashboard.html";
+        } else {
+            alert("Error: " + error.message);
+        }
+    }
 </script>
 </body>
 </html>
