@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SamratFast - samratfast.online</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1e40af">
+<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2830/2830284.png">
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js')})}
+</script>
+</head>
+<body class="bg-[#f8fafc] font-sans">
+<div id="root"></div>
+<script>
+const CFG_KEY='sf_cfg10', USERS_KEY='sf_users10', CUR_KEY='sf_cur10';
+let cfg = JSON.parse(localStorage.getItem(CFG_KEY)||'{"upi":"samratfast@upi","name":"SamratFast","rate":10}'); // 10% for 150 logic
+let users = JSON.parse(localStorage.getItem(USERS_KEY)||'[]');
+let cur = JSON.parse(localStorage.getItem(CUR_KEY)||'null');
+let view = cur ? (cur.mobile==='9999999999'?'admin':'user') : 'landing';
+let plan = 50;
+const save = () => {localStorage.setItem(USERS_KEY, JSON.stringify(users)); localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); if(cur) localStorage.setItem(CUR_KEY, JSON.stringify(cur)); render();}
+function calc(u){
+  let approved = u.tx.filter(t=>t.status==='approved');
+  let total = approved.reduce((s,t)=>s+t.amount,0);
+  let days = approved.length;
+  // NEW LOGIC: 30 din complete par 150 bonus, plus uske baad har 30 din par 10% interest
+  let cycles = Math.floor(total / (u.plan*30)); // kitne 30 din ke cycle complete
+  let baseInterest = 0;
+  if(days>=30){ baseInterest = cycles * 150 + Math.floor((total - cycles*u.plan*30) * cfg.rate / 100); }
+  // Simple: agar 30 din ka target pura, to 150 fixed, agar extra jama hai to uspar 10%
+  // Example: 50*30=1500 jama -> 150 byaaj
+  // Agar user ne 10*30=300 jama kiya to bhi proportionally: 300/1500 *150 =30, isliye hum % use karenge
+  // User ki demand ke liye: 30 din tak jama par 150 milega => iska matlab 10% rate
+  let interest = Math.round(total * cfg.rate / 100);
+  // Force 150 when total = plan*30
+  if(total === plan*30) interest = 150;
+  // proportional adjust
+  if(days>=30 && total>0){
+     // exact 150 for 30 days completion
+     if(total >= u.plan*30) interest = Math.max(interest, 150);
+  }
+  return {total, days, interest, ret: total+interest};
+}
+function render(){
+  const r=document.getElementById('root');
+  if(view==='landing'){
+    r.innerHTML=`<header class="bg-white shadow sticky top-0 z-10"><div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center"><div class="flex gap-2 items-center"><div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-800 to-indigo-900 text-white flex items-center justify-center font-black">SF</div><div><div class="font-black text-blue-900 -mb-1">SamratFast</div><div class="text-[10px] text-amber-600 font-bold tracking-widest">SAMRATFAST.ONLINE • ALL OVER INDIA</div></div></div><div class="flex gap-2"><button onclick="view='login';render()" class="border px-4 py-2 rounded-full">Login</button><button onclick="view='register';render()" class="bg-blue-700 text-white px-5 py-2 rounded-full font-bold">Register</button></div></div></header>
+    <section class="max-w-6xl mx-auto px-4 py-10">
+      <div class="grid md:grid-cols-2 gap-8 items-center">
+        <div><span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">🇮🇳 ALL OVER INDIA • PAN INDIA</span><h1 class="text-4xl font-black mt-4 leading-tight">Roz Bachat Karo,<br><span class="text-blue-700">30 Din Par ₹150</span> Byaaj Pao</h1><p class="text-gray-600 mt-3">SamratFast par jitna jama karoge usi par byaaj milega. <b>30 din tak lagatar jama karne par ₹150 ka byaaj</b> fix milega (10% ke hisab se). Koi 3X double ka jhooth nahi.</p>
+        <div class="mt-4 bg-white p-4 rounded-xl border-l-4 border-amber-500 text-sm"><b>Calculation Samjho:</b><br>• ₹50/day × 30 din = ₹1500 jama<br>• Interest = ₹150 (10%)<br>• Total Return = ₹1650<br>• UPI se hi payment - All India</div>
+        <button onclick="view='register';render()" class="mt-5 px-6 py-3 bg-blue-700 text-white rounded-xl font-bold">Bachat Shuru Karo</button></div>
+        <div class="grid grid-cols-2 gap-4">${[10,20,50,100].map(a=>{let tot=a*30; let intr= Math.round(tot*cfg.rate/100); if(tot===1500) intr=150; if(a===50) intr=150; if(a===10) intr=Math.round(tot*0.1); if(a===20) intr=Math.round(tot*0.1); if(a===100) intr=Math.round(tot*0.1); return `<div class="bg-white p-5 rounded-2xl shadow border-2 ${a===50?'border-amber-400':''}"><div class="text-xs text-gray-400">DAILY PLAN</div><div class="text-3xl font-black">₹${a}</div><div class="text-xs mt-2 leading-5">30 din jama: <b>₹${tot}</b><br>Byaaj (30 din): <b class="text-green-600">₹${intr}</b><br>Total: <b>₹${tot+intr}</b></div><button onclick="plan=${a};view='register';render()" class="mt-3 w-full py-2 bg-blue-700 text-white rounded-xl text-sm font-bold">Select</button>${a===50?'<div class="text-[10px] text-center mt-1 text-amber-600 font-bold">★ Most Popular - ₹150 Byaaj</div>':''}</div>`}).join('')}</div>
+      </div>
+    </section>`;
+  } else if(view==='register' || view==='login'){
+    let isR=view==='register';
+    r.innerHTML=`<div class="min-h-screen flex items-center justify-center p-4"><div class="bg-white w-full max-w-md p-7 rounded-3xl shadow-xl"><h2 class="text-2xl font-black text-blue-900">${isR?'Naya Account - All India':'Login'}</h2><p class="text-xs text-gray-500 mb-4">samratfast.online | Sirf UPI | 30 din par ₹150 byaaj</p>
+    <div class="space-y-3">${isR?`<input id="nm" placeholder="Naam" class="w-full border p-3 rounded-xl">`:''}<input id="mo" placeholder="Mobile" class="w-full border p-3 rounded-xl"><input id="pw" type="password" placeholder="Password" class="w-full border p-3 rounded-xl">${isR?`<div class="grid grid-cols-4 gap-2">${[10,20,50,100].map(x=>`<button onclick="plan=${x};render2()" class="border py-2 rounded-xl ${plan===x?'bg-blue-700 text-white':''}">₹${x}</button>`).join('')}</div>`:''}<button onclick="${isR?'reg()':'log()'}" class="w-full py-3 bg-blue-700 text-white rounded-xl font-bold">${isR?'Register - ₹'+plan+'/day plan':'Login'}</button><div class="text-center text-sm"><span onclick="view='${isR?'login':'register'}';render()" class="text-blue-600 underline cursor-pointer">${isR?'Login':'Register'}</span> • <span onclick="view='landing';render()" class="underline cursor-pointer">Home</span></div><div class="text-[11px] text-center text-gray-400 mt-2">Admin: 9999999999 / admin123</div></div></div></div>`;
+  } else if(view==='user'){
+    let u=users.find(x=>x.mobile===cur.mobile); if(!u){view='landing';render();return;} let c=calc(u);
+    let progress = Math.min(100, Math.round(c.days/30*100));
+    r.innerHTML=`<div class="max-w-6xl mx-auto p-4"><div class="flex justify-between py-3 items-center"><div class="font-black">SF SamratFast <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full ml-2">USER • ALL INDIA</span></div><button onclick="logout()" class="border px-4 py-2 rounded-full text-sm">Logout</button></div>
+    <div class="grid md:grid-cols-4 gap-3 mt-3"><div class="bg-white p-4 rounded-2xl shadow"><div class="text-xs text-gray-500">Kul Jama</div><div class="text-2xl font-black">₹${c.total}</div></div><div class="bg-amber-50 border border-amber-200 p-4 rounded-2xl"><div class="text-xs text-amber-700">Byaaj (30 din par ₹150)</div><div class="text-2xl font-black text-amber-600">₹${c.interest}</div><div class="text-[10px]">${c.days>=30?'30 din complete!':'30 din par 150 milega'}</div></div><div class="bg-blue-700 text-white p-4 rounded-2xl"><div class="text-xs opacity-80">Total Return</div><div class="text-2xl font-black">₹${c.ret}</div></div><div class="bg-white p-4 rounded-2xl"><div class="text-xs">Progress</div><div class="w-full bg-gray-200 h-2 rounded-full mt-2"><div class="bg-blue-700 h-2 rounded-full" style="width:${progress}%"></div></div><div class="text-xs mt-1">${c.days}/30 din</div></div></div>
+    <div class="grid md:grid-cols-2 gap-4 mt-6"><div class="bg-white p-5 rounded-2xl shadow"><h3 class="font-bold">UPI Se Payment Karo - ₹${u.plan}</h3><div class="bg-gray-50 p-4 rounded-xl text-center mt-3"><div class="text-xs">Admin UPI</div><div class="font-mono font-bold text-lg text-blue-700">${cfg.upi}</div><div class="w-40 h-40 mx-auto mt-2 bg-white border-2 border-dashed flex items-center justify-center text-[11px]">QR<br>${cfg.upi}<br>₹${u.plan}</div><a href="upi://pay?pa=${cfg.upi}&pn=${encodeURIComponent(cfg.name)}&am=${u.plan}&cu=INR&tn=SamratFast ${u.plan}" class="mt-3 inline-block px-6 py-2 bg-green-600 text-white rounded-full font-bold">PhonePe / GPay Se Pay ₹${u.plan}</a></div><div class="flex gap-2 mt-4"><input id="utr" placeholder="UTR / Txn ID (12 digit) dalo" class="flex-1 border p-3 rounded-xl"><button onclick="pay()" class="px-5 py-3 bg-blue-700 text-white rounded-xl font-bold">Submit</button></div><p class="text-[11px] text-gray-500 mt-2">Payment karke UTR dalo. Admin approve karega tabhi 30 din wala ₹150 byaaj count hoga.</p></div><div class="bg-white p-5 rounded-2xl shadow"><h3 class="font-bold">Ledger</h3><div class="space-y-2 mt-3 max-h-80 overflow-auto">${u.tx.slice().reverse().map(t=>`<div class="flex justify-between border p-2 rounded-xl text-sm"><div>${t.date} ₹${t.amount}<div class="text-[10px] text-gray-500">${t.utr}</div></div><span class="text-[10px] px-2 py-1 rounded-full ${t.status==='approved'?'bg-green-100 text-green-700':'bg-yellow-100'}">${t.status}</span></div>`).join('')||'<div class="text-sm text-gray-400">Koi entry nahi</div>'}</div></div></div></div>`;
+  } else if(view==='admin'){
+    r.innerHTML=`<div class="max-w-7xl mx-auto p-4"><div class="flex justify-between py-3"><div class="font-black text-xl">ADMIN - ${cfg.upi} - 30 din = ₹150 byaaj logic</div><button onclick="logout()" class="border px-4 py-2 rounded-full">Logout</button></div><div class="grid md:grid-cols-4 gap-3"><div class="bg-white p-4 rounded-xl">Users: <b>${users.length}</b></div><div class="bg-white p-4 rounded-xl">Pending UTR: <b>${users.reduce((s,u)=>s+u.tx.filter(t=>t.status==='pending').length,0)}</b></div><div class="bg-white p-4 rounded-xl">Total Jama: <b>₹${users.reduce((s,u)=>s+calc(u).total,0)}</b></div><div class="bg-white p-4 rounded-xl">Byaaj Dena: <b>₹${users.reduce((s,u)=>s+calc(u).interest,0)}</b></div></div><div class="grid md:grid-cols-3 gap-4 mt-5"><div class="md:col-span-2 bg-white p-4 rounded-2xl"><table class="w-full text-sm"><tr class="text-xs border-b"><th class="text-left p-2">User</th><th>Plan</th><th>Jama</th><th>Byaaj(150)</th><th>Action</th></tr>${users.map(u=>{let c=calc(u); return `<tr class="border-b"><td class="p-2">${u.name}<br><span class="text-xs">${u.mobile}</span></td><td>₹${u.plan}</td><td>₹${c.total} (${c.days}d)</td><td>₹${c.interest}</td><td>${u.tx.filter(t=>t.status==='pending').map(t=>`<button onclick="approve('${u.mobile}','${t.id}')" class="text-[10px] bg-green-600 text-white px-2 py-1 rounded mb-1">Approve ${t.amount} UTR:${t.utr}</button>`).join('<br>')||'—'}</td></tr>`}).join('')}</table></div><div class="bg-white p-4 rounded-2xl"><h3 class="font-bold">Settings</h3><div class="space-y-3 mt-3"><label class="text-xs">Admin UPI ID (All India)</label><input id="cupi" value="${cfg.upi}" class="w-full border p-2 rounded-xl"><label class="text-xs">Interest % (default 10% = 30 din par 150)</label><input id="crate" type="number" value="${cfg.rate}" class="w-full border p-2 rounded-xl"><button onclick="saveCfg()" class="w-full py-2 bg-blue-700 text-white rounded-xl">Save</button><div class="text-xs bg-blue-50 p-3 rounded-xl mt-3"><b>Logic:</b><br>• 50×30=1500 jama → 10% = ₹150 byaaj<br>• 10×30=300 jama → 10% = ₹30 byaaj<br>• Agar aapko har plan par ₹150 fix chahiye to rate ko 50% kar do (10 ke liye) ya alag logic batao.</div></div></div></div></div>`;
+  }
+}
+function render2(){render();}
+function reg(){let n=document.getElementById('nm').value,m=document.getElementById('mo').value,p=document.getElementById('pw').value; if(!n||!m||!p){alert('bharo');return;} if(users.find(u=>u.mobile===m)){alert('exist');return;} let nu={name:n,mobile:m,password:p,plan:plan,tx:[]}; users.push(nu); cur=nu; save(); view='user'; render();}
+function log(){let m=document.getElementById('mo').value,p=document.getElementById('pw').value; if(m==='9999999999'&&p==='admin123'){cur={mobile:m}; save(); view='admin'; render(); return;} let u=users.find(x=>x.mobile===m&&x.password===p); if(!u){alert('wrong');return;} cur=u; save(); view='user'; render();}
+function logout(){cur=null; localStorage.removeItem(CUR_KEY); view='landing'; render();}
+function pay(){let utr=document.getElementById('utr').value; if(!utr){alert('UTR dalo');return;} let u=users.find(x=>x.mobile===cur.mobile); u.tx.push({id:Date.now().toString(),amount:u.plan,date:new Date().toLocaleDateString(),utr,status:'pending'}); cur=u; save(); alert('UTR submitted'); render();}
+function approve(mob,id){let u=users.find(x=>x.mobile===mob); let t=u.tx.find(x=>x.id===id); t.status='approved'; save(); render();}
+function saveCfg(){cfg.upi=document.getElementById('cupi').value; cfg.rate=parseFloat(document.getElementById('crate').value)||10; save(); alert('Saved - Ab 30 din = '+Math.round(50*30*cfg.rate/100)+' byaaj logic'); render();}
+render();
+</script>
+</body>
+</html>
