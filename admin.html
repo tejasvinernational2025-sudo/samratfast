@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin - Collection Control</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; background: #111; color: white; padding: 20px; }
+        .row { background: #222; padding: 15px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #fbbf24; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Pending Collections 🏦</h1>
+    <div id="list">Loading requests...</div>
+
+<script>
+    const SUPABASE_URL = "https://ugqcxyjrtjzgrsjnsdzz.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_Vh_h43bueeQGhN_vXeey6w_V0rnZ"; 
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function loadRequests() {
+        const { data, error } = await _supabase.from('bets_xtreme').select('*, users_xtreme(name, wallet)').eq('status', 'pending');
+        
+        let html = "";
+        data.forEach(req => {
+            html += `<div class="row">
+                <span><b>${req.users_xtreme.name}</b>: ₹${req.amount}<br><small>UTR: ${req.number}</small></span>
+                <button onclick="approve('${req.id}', '${req.user_id}', ${req.amount}, ${req.users_xtreme.wallet})">APPROVE</button>
+            </div>`;
+        });
+        document.getElementById("list").innerHTML = html || "No pending requests.";
+    }
+
+    async function approve(id, uId, amt, currentBal) {
+        // 1. User ka balance badhao
+        await _supabase.from('users_xtreme').update({ wallet: currentBal + amt }).eq('id', uId);
+        // 2. Request complete karo
+        await _supabase.from('bets_xtreme').update({ status: 'approved' }).eq('id', id);
+        
+        alert("Paisa Jama Ho Gaya!");
+        loadRequests();
+    }
+
+    loadRequests();
+</script>
+</body>
+</html>
