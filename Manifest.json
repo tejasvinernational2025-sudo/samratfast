@@ -1,0 +1,16 @@
+{
+  "name": "SamratFast - All India Daily Bachat",
+  "short_name": "SamratFast",
+  "description": "Roz 10 se shuru, 30 din par 150 byaaj - All Over India - samratfast.online",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e40af",
+  "theme_color": "#1e40af",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2830/2830284.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
