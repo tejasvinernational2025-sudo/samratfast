@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khata Kholiye - Samrat Daily Savings</title>
+    <!-- Supabase Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --primary: #1e3a8a; --gold: #fbbf24; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 350px; text-align: center; border-top: 5px solid var(--primary); }
+        h2 { color: var(--primary); margin-bottom: 5px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .btn-reg { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        .btn-reg:hover { background: #1e40af; }
+        .footer-link { margin-top: 15px; font-size: 14px; color: #64748b; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Naya Khata Kholein</h2>
+    <p style="font-size: 12px; color: #64748b; margin-bottom: 20px;">Samrat Daily Savings Portal</p>
+    
+    <input type="text" id="userName" placeholder="Apna Poora Naam">
+    <input type="text" id="userPhone" placeholder="Mobile Number">
+    <input type="password" id="userPass" placeholder="Password Set Karein">
+    
+    <button class="btn-reg" onclick="registerMember()">REGISTER NOW</button>
+    
+    <div class="footer-link">
+        Pehle se account hai? <a href="login.html" style="color: var(--primary); font-weight: bold;">Login Karein</a>
+    </div>
+</div>
+
+<script>
+    // --- APKI ASLI SUPABASE CONFIG (Verified) ---
+    const SUPABASE_URL = "https://ugqcxyjrtjzgrsjnsdzz.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_Vh_h43bueeQGhN_vXeey6w_V0rnZ"; 
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function registerMember() {
+        const name = document.getElementById("userName").value.trim();
+        const phone = document.getElementById("userPhone").value.trim();
+        const pass = document.getElementById("userPass").value.trim();
+
+        if(!name || !phone || !pass) {
+            alert("Bhai saari details bharo!");
+            return;
+        }
+
+        try {
+            // 1. Check if user already exists
+            const { data: existingUser } = await _supabase
+                .from('users_xtreme')
+                .select('phone')
+                .eq('phone', phone)
+                .single();
+
+            if (existingUser) {
+                alert("Ye number pehle se register hai!");
+                return;
+            }
+
+            // 2. Add New Member to Supabase
+            const { error } = await _supabase
+                .from('users_xtreme')
+                .insert([{ 
+                    name: name, 
+                    phone: phone, 
+                    password: pass, 
+                    wallet: 0, 
+                    status: 'active' 
+                }]);
+
+            if (error) {
+                alert("Error: " + error.message);
+            } else {
+                alert("Mubarak ho! Khata khul gaya. Ab Login karein.");
+                window.location.href = "login.html";
+            }
+
+        } catch (err) {
+            alert("Connection Error: " + err.message);
+        }
+    }
+</script>
+</body>
+</html>
